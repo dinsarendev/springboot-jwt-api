@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  postgres-db:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: web_content_db      # Create a database named payment_limit
+      POSTGRES_USER: postgres         # Set PostgreSQL username
+      POSTGRES_PASSWORD: 1234     # Set PostgreSQL password
+    ports:
+      - "30000:5432"  # Expose PostgreSQL on port 5433 on the host
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - /Users/dinsaren/Documents/projects/misteams/cambofreelance/simple/Untitled/springboot-jwt-api/postgres/data:/var/lib/postgresql/data
+
+  app:
+    container_name: web-content-api
+    build: .
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/web_content_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+    ports:
+      - "2025:2025"
+volumes:
+  postgres_data:
+    driver: local
