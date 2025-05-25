@@ -44,4 +44,7 @@ public class Hotel {
   private String status;
   @Transient
   private List<Floor> floors;
+
+  @ManyToOne
+  private CategoryHotel categoryHotel;
 }

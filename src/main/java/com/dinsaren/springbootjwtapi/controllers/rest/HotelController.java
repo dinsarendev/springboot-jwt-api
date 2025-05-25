@@ -3,11 +3,13 @@ package com.dinsaren.springbootjwtapi.controllers.rest;
 import com.dinsaren.springbootjwtapi.constants.Constants;
 import com.dinsaren.springbootjwtapi.exception.AppException;
 import com.dinsaren.springbootjwtapi.models.Category;
+import com.dinsaren.springbootjwtapi.models.CategoryHotel;
 import com.dinsaren.springbootjwtapi.models.Floor;
 import com.dinsaren.springbootjwtapi.models.Hotel;
 import com.dinsaren.springbootjwtapi.models.Room;
 import com.dinsaren.springbootjwtapi.models.req.BasePostReq;
 import com.dinsaren.springbootjwtapi.models.res.MessageRes;
+import com.dinsaren.springbootjwtapi.repository.CategoryHotelRepository;
 import com.dinsaren.springbootjwtapi.repository.FloorRepository;
 import com.dinsaren.springbootjwtapi.repository.HotelRepository;
 import com.dinsaren.springbootjwtapi.repository.RoomRepository;
@@ -30,20 +32,28 @@ public class HotelController {
   private final HotelRepository hotelRepository;
   private final FloorRepository floorRepository;
   private final RoomRepository roomRepository;
+  private final CategoryHotelRepository categoryHotelRepository;
   private MessageRes messageRes;
   public HotelController(HotelRepository hotelRepository, FloorRepository floorRepository,
-      RoomRepository roomRepository) {
+      RoomRepository roomRepository, CategoryHotelRepository categoryHotelRepository) {
     this.hotelRepository = hotelRepository;
     this.floorRepository = floorRepository;
     this.roomRepository = roomRepository;
+    this.categoryHotelRepository = categoryHotelRepository;
   }
 
   @PostMapping("/list")
   public ResponseEntity<Object> getAll(@RequestBody BasePostReq req) {
     messageRes = new MessageRes();
+    List<Hotel> hotelList = new ArrayList<>();
     try {
       log.info("Intercept get all hotel req {}", req);
-      List<Hotel> hotelList = hotelRepository.findAllByStatusOrderByIdDesc(Constants.STATUS_ACTIVE);
+      if(req.getType().equals("ALL")) {
+        hotelList = hotelRepository.findAllByStatusOrderByIdDesc(Constants.STATUS_ACTIVE);
+      }else{
+        hotelList = hotelRepository.findAllByCategoryHotelIdAndStatusOrderByIdDesc(
+            req.getCategoryHotelId(), Constants.STATUS_ACTIVE);
+      }
       messageRes = new MessageRes();
       messageRes.setSuccess(hotelList);
       return new ResponseEntity<>(messageRes, HttpStatus.OK);
@@ -76,6 +86,21 @@ public class HotelController {
       return new ResponseEntity<>(messageRes, HttpStatus.OK);
     } catch (Exception e) {
       log.error("Error internal error get hotel by id {}", e.toString());
+      return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @PostMapping("/category/list")
+  public ResponseEntity<Object> getAllCategoryHotels(@RequestBody BasePostReq req) {
+    messageRes = new MessageRes();
+    try {
+      log.info("Intercept get all category hotel req {}", req);
+      List<CategoryHotel> hotelList = categoryHotelRepository.findAllByStatus(Constants.STATUS_ACTIVE);
+      messageRes = new MessageRes();
+      messageRes.setSuccess(hotelList);
+      return new ResponseEntity<>(messageRes, HttpStatus.OK);
+    } catch (Exception e) {
+      log.error("Error internal error get all category hotel {}", e.toString());
       return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
