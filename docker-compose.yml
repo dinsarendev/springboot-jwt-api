@@ -1,7 +1,7 @@
 version: '3'
 services:
   api-gateway:
-    container_name: api-gateway
+    container_name: web-content-management-api
     build: .
     ports:
       - "30033:30033"
