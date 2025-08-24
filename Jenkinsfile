@@ -59,7 +59,7 @@ pipeline {
                                     echo "❌ Project directory not found. Cloning repository..."
                                     mkdir -p ${ROOT_DIR}
                                     cd ${ROOT_DIR}
-                                    git clone ${REPOSITORY_URL} ${PROJECT_DIR}
+                                    git clone ${REPOSITORY_URL} ${PROJECT_FOLDER}
                                 fi
                                 
                                 # Navigate to the project folder inside the cloned repository
