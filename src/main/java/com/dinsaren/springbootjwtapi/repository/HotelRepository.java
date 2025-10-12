@@ -8,4 +8,5 @@ public interface HotelRepository extends JpaRepository<Hotel, Integer> {
   List<Hotel> findAllByStatusOrderByIdDesc(String status);
   Hotel findByIdAndStatus(Integer id, String status);
   List<Hotel> findAllByCategoryHotelIdAndStatusOrderByIdDesc(Integer categoryHotelId, String status);
+
 }
