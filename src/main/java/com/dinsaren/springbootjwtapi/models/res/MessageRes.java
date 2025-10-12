@@ -44,6 +44,13 @@ public class MessageRes {
         this.messageKh = "សំណើមិនល្អ";
     }
 
+    public void setDataNotfound(String message) {
+        this.code = ErrorCode.BAD_REQUEST;
+        this.message = message;
+        this.messageKh = message;
+    }
+
+
     public void setError(Object data) {
         this.code = "ERR-000";
         this.message = "Data Approval Error";

@@ -1,6 +1,8 @@
 package com.dinsaren.springbootjwtapi.models;
 
 
+import com.dinsaren.springbootjwtapi.constants.Constants;
+import com.dinsaren.springbootjwtapi.models.req.CreateHotelRequest;
 import java.util.List;
 import lombok.Data;
 import lombok.Getter;
@@ -47,4 +49,16 @@ public class Hotel {
 
   @ManyToOne
   private CategoryHotel categoryHotel;
+
+  public void setDataCreate(CreateHotelRequest data, CategoryHotel categoryHotel) {
+      this.id = data.getId();
+      this.userId = data.getUserId();
+      this.imageUrl = data.getImageUrl();
+      this.name = data.getName();
+      this.decription = data.getDescription();
+      this.phone = data.getPhone();
+      this.email = data.getEmail();
+      this.status = Constants.STATUS_ACTIVE;
+      this.categoryHotel = categoryHotel;
+  }
 }
