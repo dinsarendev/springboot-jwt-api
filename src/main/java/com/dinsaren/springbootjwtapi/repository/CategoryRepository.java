@@ -11,5 +11,6 @@ import java.util.Optional;
 public interface CategoryRepository extends JpaRepository<Category, Integer> {
     List<Category> findAllByStatus(String status);
     List<Category> findAllByStatusIn(List<String> stringList);
+    List<Category> findAllByStatusInOrderByIdDesc(List<String> stringList);
     Optional<Category> findByIdAndStatus(Integer id, String status);
 }

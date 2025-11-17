@@ -30,7 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
             List<String> stringList = new ArrayList<>();
             stringList.add(Constants.STATUS_ACTIVE);
             stringList.add(Constants.STATUS_DELETE);
-            return categoryRepository.findAllByStatusIn(stringList);
+            return categoryRepository.findAllByStatusInOrderByIdDesc(stringList);
         }
         return categoryRepository.findAllByStatus(status);
     }

@@ -1,11 +1,13 @@
 package com.dinsaren.springbootjwtapi.controllers.rest;
 
+import com.dinsaren.springbootjwtapi.constants.Constants;
 import com.dinsaren.springbootjwtapi.models.product.Product;
 import com.dinsaren.springbootjwtapi.models.product.ProductCategory;
 import com.dinsaren.springbootjwtapi.models.req.BasePostReq;
 import com.dinsaren.springbootjwtapi.models.res.MessageRes;
 import com.dinsaren.springbootjwtapi.repository.ProductCategoryRepository;
 import com.dinsaren.springbootjwtapi.repository.ProductRepository;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -115,9 +117,20 @@ public class ProductController {
     @PostMapping("/list")
     public ResponseEntity<Object> getAllProducts(@RequestBody BasePostReq req) {
         try {
-            List<Product> list = productRepository.findAll();
-            messageRes = new MessageRes();
-            messageRes.setSuccess(list);
+            List<String> stringList = new ArrayList<>();
+            if (req.getStatus().equals("ALL")) {
+                stringList.add(Constants.STATUS_ACTIVE);
+                stringList.add(Constants.STATUS_DELETE);
+                List<Product> list = productRepository.findAllByStatusInOrderByIdDesc(stringList);
+                messageRes = new MessageRes();
+                messageRes.setSuccess(list);
+            }
+            if(req.getStatus() == null) {
+                stringList.add(Constants.STATUS_ACTIVE);
+                List<Product> list = productRepository.findAllByStatusInOrderByIdDesc(stringList);
+                messageRes = new MessageRes();
+                messageRes.setSuccess(list);
+            }
             return new ResponseEntity<>(messageRes, HttpStatus.OK);
         } catch (Throwable e) {
             log.error("Error internal error get all product by user id {}", e.toString());
@@ -132,7 +145,7 @@ public class ProductController {
             messageRes = new MessageRes();
             messageRes.setSuccess(object);
             return new ResponseEntity<>(messageRes, HttpStatus.OK);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             log.error("Error internal error get product by id {}", e.toString());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }

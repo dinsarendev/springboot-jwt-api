@@ -29,5 +29,6 @@ public class Product {
     private double cost;
     private double stockQuantity;
     private String description;
+    private String status;
 
 }
