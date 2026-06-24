@@ -8,16 +8,16 @@ import javax.persistence.*;
 
 @EqualsAndHashCode(callSuper = false)
 @Entity
-@Table(name = "categories")
-@DynamicUpdate()
+@Table(name = "post_categories")
+@DynamicUpdate
 @Data
-public class Category extends BaseEntity {
+public class PostCategory extends BaseEntity {
     private static final long serialVersionUID = 4489397646584896516L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String name;
     private String imageUrl;
     private String status;
-
 }

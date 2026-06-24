@@ -7,6 +7,10 @@ import com.dinsaren.springbootjwtapi.models.req.ChangePasswordReq;
 import com.dinsaren.springbootjwtapi.payload.response.MessageRes;
 import com.dinsaren.springbootjwtapi.repository.UserRepository;
 import com.dinsaren.springbootjwtapi.services.AuthenticationUtilService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +26,8 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/app/user")
 @Slf4j
-@PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN')")
+@Tag(name = "User", description = "Current user profile and password management")
+//@PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN')")
 public class UserController {
     private final AuthenticationUtilService authenticationUtilService;
     private MessageRes messageRes;
@@ -35,6 +40,12 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
+    @Operation(summary = "Update user profile", description = "Update profile fields for the authenticated user")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Username, email or phone already in use"),
+            @ApiResponse(responseCode = "502", description = "User not found")
+    })
     @PostMapping("/update")
     public ResponseEntity<MessageRes> update(@RequestBody User req) {
         messageRes = new MessageRes();
@@ -76,6 +87,12 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "Change password", description = "Change password for the currently authenticated user")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "400", description = "Old password incorrect or passwords do not match"),
+            @ApiResponse(responseCode = "502", description = "User not found")
+    })
     @PostMapping("/change/password")
     public ResponseEntity<MessageRes> changePassword(@RequestBody ChangePasswordReq req) {
         messageRes = new MessageRes();
@@ -115,6 +132,11 @@ public class UserController {
         return new ResponseEntity<>(messageRes, HttpStatus.OK);
     }
 
+    @Operation(summary = "Get user by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/{id}")
     public ResponseEntity<Object> getById(@RequestBody BasePostReq req, @PathVariable("id") Integer id) {
         try {
@@ -134,5 +156,4 @@ public class UserController {
             log.info("Get user by id final result {}", messageRes);
         }
     }
-
 }

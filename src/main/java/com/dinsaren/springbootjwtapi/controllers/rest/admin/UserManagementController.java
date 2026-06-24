@@ -11,6 +11,10 @@ import com.dinsaren.springbootjwtapi.payload.response.MessageRes;
 import com.dinsaren.springbootjwtapi.repository.RoleRepository;
 import com.dinsaren.springbootjwtapi.repository.UserRepository;
 import com.dinsaren.springbootjwtapi.services.AuthenticationUtilService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +32,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/app/admin/user")
 @Slf4j
+@Tag(name = "Admin - User Management", description = "Admin user management (ADMIN role required)")
 @PreAuthorize("hasRole('ADMIN')")
 public class UserManagementController {
     private final UserRepository userRepository;
@@ -46,6 +51,10 @@ public class UserManagementController {
         this.encoder = encoder;
     }
 
+    @Operation(summary = "List all users", description = "Pass status=ALL to include deleted users")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List returned successfully")
+    })
     @PostMapping("/list")
     public ResponseEntity<MessageRes> getAllUser(@RequestBody BaseUserReq req) {
         messageRes = new MessageRes();
@@ -57,14 +66,9 @@ public class UserManagementController {
                 return new ResponseEntity<>(messageRes, HttpStatus.BAD_GATEWAY);
             }
             if (req.getStatus().equals("ALL")) {
-                userRepository.findAll().forEach(c -> {
-                    userList.add(c);
-                });
-
+                userRepository.findAll().forEach(userList::add);
             } else {
-                userRepository.findAllByStatus(req.getStatus()).forEach(c -> {
-                    userList.add(c);
-                });
+                userRepository.findAllByStatus(req.getStatus()).forEach(userList::add);
             }
             messageRes.setMessageSuccess(userList);
         } catch (Throwable e) {
@@ -75,6 +79,11 @@ public class UserManagementController {
         return new ResponseEntity<>(messageRes, HttpStatus.OK);
     }
 
+    @Operation(summary = "Create user account", description = "Admin creates a user with a specific role (USER or ADMIN)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User created successfully"),
+            @ApiResponse(responseCode = "400", description = "Validation error or duplicate username / email / phone")
+    })
     @PostMapping("/create")
     public ResponseEntity<MessageRes> create(@RequestBody RegisterReq req) {
         MessageRes messageRes = new MessageRes();
@@ -92,24 +101,20 @@ public class UserManagementController {
                 messageRes.setNameAlreadyUse();
                 return new ResponseEntity<>(messageRes, HttpStatus.BAD_REQUEST);
             }
-
             if (userRepository.existsByEmailAndStatus(req.getEmail(), Constants.STATUS_ACTIVE)) {
                 messageRes.setEmailAlreadyUse();
                 return new ResponseEntity<>(messageRes, HttpStatus.BAD_REQUEST);
             }
-
             if (userRepository.existsByPhoneNumberAndStatus(req.getPhoneNumber(), Constants.STATUS_ACTIVE)) {
                 messageRes.setPhoneAlreadyUse();
                 return new ResponseEntity<>(messageRes, HttpStatus.BAD_REQUEST);
             }
-
             User user = new User(req.getUsername(), req.getEmail(), encoder.encode(req.getPassword()), req.getPhoneNumber());
             Set<Role> roles = new HashSet<>();
             Role role = null;
             if (req.getRole().equals(UserRole.ROLE_USER) || req.getRole().equals("USER")) {
                 role = roleRepository.findByName(UserRole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
             }
-
             if (req.getRole().equals(UserRole.ROLE_ADMIN) || req.getRole().equals("ADMIN")) {
                 role = roleRepository.findByName(UserRole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
             }
@@ -133,6 +138,11 @@ public class UserManagementController {
         }
     }
 
+    @Operation(summary = "Update user account")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Duplicate username / email / phone or user not found")
+    })
     @PostMapping("/update")
     public ResponseEntity<MessageRes> update(@RequestBody RegisterReq req) {
         MessageRes messageRes = new MessageRes();
@@ -173,11 +183,10 @@ public class UserManagementController {
             if (req.getRole().equals(UserRole.ROLE_USER) || req.getRole().equals("USER")) {
                 role = roleRepository.findByName(UserRole.ROLE_USER).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
             }
-
             if (req.getRole().equals(UserRole.ROLE_ADMIN) || req.getRole().equals("ADMIN")) {
                 role = roleRepository.findByName(UserRole.ROLE_ADMIN).orElseThrow(() -> new RuntimeException("Error: Role is not found."));
             }
-            if(!req.getPassword().equals(user.getPassword())){
+            if (!req.getPassword().equals(user.getPassword())) {
                 user.setPassword(encoder.encode(req.getPassword()));
             }
             roles.add(role);
@@ -194,7 +203,11 @@ public class UserManagementController {
         }
     }
 
-
+    @Operation(summary = "Get user by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/{id}")
     public ResponseEntity<Object> getById(@RequestBody BasePostReq req, @PathVariable("id") Integer id) {
         try {
@@ -215,6 +228,11 @@ public class UserManagementController {
         }
     }
 
+    @Operation(summary = "Delete user", description = "Soft-deletes the user by setting status to DEL")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/delete")
     public ResponseEntity<MessageRes> delete(@RequestBody RegisterReq req) {
         MessageRes messageRes = new MessageRes();
@@ -233,6 +251,4 @@ public class UserManagementController {
             log.info("Update user account req final result {}", messageRes);
         }
     }
-
-
 }

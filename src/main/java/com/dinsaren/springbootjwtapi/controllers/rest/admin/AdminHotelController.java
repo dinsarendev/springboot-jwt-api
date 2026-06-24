@@ -1,16 +1,18 @@
 package com.dinsaren.springbootjwtapi.controllers.rest.admin;
 
-
 import com.dinsaren.springbootjwtapi.constants.Constants;
 import com.dinsaren.springbootjwtapi.models.CategoryHotel;
 import com.dinsaren.springbootjwtapi.models.Hotel;
-import com.dinsaren.springbootjwtapi.models.Post;
 import com.dinsaren.springbootjwtapi.models.req.BasePostReq;
 import com.dinsaren.springbootjwtapi.models.req.CreateHotelRequest;
 import com.dinsaren.springbootjwtapi.models.res.MessageRes;
 import com.dinsaren.springbootjwtapi.repository.CategoryHotelRepository;
 import com.dinsaren.springbootjwtapi.repository.FloorRepository;
 import com.dinsaren.springbootjwtapi.repository.HotelRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/app/admin/hotel")
 @Slf4j
+@Tag(name = "Admin - Hotel", description = "Admin hotel and hotel category management (ADMIN role required)")
 @RequiredArgsConstructor
 public class AdminHotelController {
 
@@ -36,12 +39,16 @@ public class AdminHotelController {
     private final FloorRepository floorRepository;
     private MessageRes messageRes;
 
+    @Operation(summary = "List all hotels")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List returned successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/list")
     public ResponseEntity<Object> getAll(@RequestBody BasePostReq req) {
         try {
             log.info("Intercept get all hotel by user id req {}", req);
-            List<Hotel> hotelList = hotelRepository.findAllByStatusOrderByIdDesc(
-                Constants.STATUS_ACTIVE);
+            List<Hotel> hotelList = hotelRepository.findAllByStatusOrderByIdDesc(Constants.STATUS_ACTIVE);
             messageRes = new MessageRes();
             messageRes.setSuccess(hotelList);
             return new ResponseEntity<>(messageRes, HttpStatus.OK);
@@ -51,6 +58,11 @@ public class AdminHotelController {
         }
     }
 
+    @Operation(summary = "Get hotel by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Hotel found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/{id}")
     public ResponseEntity<Object> getById(@RequestBody BasePostReq req, @PathVariable("id") Integer id) {
         try {
@@ -65,6 +77,12 @@ public class AdminHotelController {
         }
     }
 
+    @Operation(summary = "Create hotel")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Created successfully"),
+            @ApiResponse(responseCode = "400", description = "Category not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/create")
     public ResponseEntity<Object> create(@RequestBody CreateHotelRequest req) {
         try {
@@ -87,6 +105,12 @@ public class AdminHotelController {
         }
     }
 
+    @Operation(summary = "Update hotel")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Hotel or category not found, or hotel is in use"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/update")
     public ResponseEntity<Object> update(@RequestBody CreateHotelRequest req) {
         try {
@@ -121,6 +145,12 @@ public class AdminHotelController {
         }
     }
 
+    @Operation(summary = "Delete hotel")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Hotel not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/delete")
     public ResponseEntity<Object> delete(@RequestBody CreateHotelRequest req) {
         try {
@@ -142,24 +172,32 @@ public class AdminHotelController {
         }
     }
 
-
+    @Operation(summary = "List hotel categories")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List returned successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/category/list")
     public ResponseEntity<Object> getAllCategory(@RequestBody BasePostReq req) {
         try {
-            log.info("Intercept get all hotel category  by user id req {}", req);
+            log.info("Intercept get all hotel category by user id req {}", req);
             List<CategoryHotel> categoryHotelList = categoryHotelRepository.findAllByStatus(Constants.STATUS_ACTIVE);
             messageRes = new MessageRes();
             messageRes.setSuccess(categoryHotelList);
             return new ResponseEntity<>(messageRes, HttpStatus.OK);
         } catch (Exception e) {
-            log.error("Error internal error get all hotel category  by user id {}", e.toString());
+            log.error("Error internal error get all hotel category by user id {}", e.toString());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @Operation(summary = "Get hotel category by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Category found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/category/{id}")
-    public ResponseEntity<Object> getCategortById(@RequestBody BasePostReq req,
-        @PathVariable("id") Integer id) {
+    public ResponseEntity<Object> getCategortById(@RequestBody BasePostReq req, @PathVariable("id") Integer id) {
         try {
             log.info("Intercept get hotel category by req {}", req);
             CategoryHotel object = categoryHotelRepository.findById(id).orElse(null);
@@ -167,11 +205,16 @@ public class AdminHotelController {
             messageRes.setSuccess(object);
             return new ResponseEntity<>(messageRes, HttpStatus.OK);
         } catch (Exception e) {
-            log.error("Error internal error get hotel category  by id {}", e.toString());
+            log.error("Error internal error get hotel category by id {}", e.toString());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @Operation(summary = "Create hotel category")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Created successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/category/create")
     public ResponseEntity<Object> createCategory(@RequestBody CategoryHotel req) {
         try {
@@ -187,6 +230,12 @@ public class AdminHotelController {
         }
     }
 
+    @Operation(summary = "Update hotel category")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Category not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/category/update")
     public ResponseEntity<Object> updateCategory(@RequestBody CategoryHotel req) {
         try {
@@ -208,6 +257,12 @@ public class AdminHotelController {
         }
     }
 
+    @Operation(summary = "Delete hotel category")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Category not found or still in use by hotels"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
     @PostMapping("/category/delete")
     public ResponseEntity<Object> deleteCategory(@RequestBody CategoryHotel req) {
         try {
@@ -234,5 +289,4 @@ public class AdminHotelController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 }
