@@ -1,9 +1,8 @@
 package com.dinsaren.springbootjwtapi.models;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.Data;
-
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
 
 @Embeddable
 @Data

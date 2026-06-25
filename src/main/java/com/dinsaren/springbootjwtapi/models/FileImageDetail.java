@@ -1,18 +1,21 @@
 package com.dinsaren.springbootjwtapi.models;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.DynamicUpdate;
-
-import javax.persistence.*;
-import java.io.Serializable;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "image_details")
 @DynamicUpdate()
-public class FileImageDetail implements Serializable {
+public class FileImageDetail extends BaseEntity {
 
     private static final long serialVersionUID = 4489397646584896516L;
     @Id

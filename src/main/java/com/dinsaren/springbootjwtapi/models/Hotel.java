@@ -3,13 +3,18 @@ package com.dinsaren.springbootjwtapi.models;
 
 import com.dinsaren.springbootjwtapi.constants.Constants;
 import com.dinsaren.springbootjwtapi.models.req.CreateHotelRequest;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.util.List;
-import lombok.Data;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
-import javax.persistence.*;
 import lombok.Setter;
 
 @Getter
@@ -18,7 +23,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "hotel", schema = "hotel")
-public class Hotel {
+public class Hotel extends BaseEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

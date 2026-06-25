@@ -16,11 +16,11 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
 
     Page<Post> findAllByStatusInOrderByIdDesc(List<String> statusList, Pageable pageable);
 
-    Page<Post> findAllByStatusInAndCategory_IdOrderByIdDesc(List<String> statusList, Integer categoryId, Pageable pageable);
+    Page<Post> findAllByStatusInAndPostCategory_IdOrderByIdDesc(List<String> statusList, Integer categoryId, Pageable pageable);
 
     Page<Post> findAllByStatusAndUser_IdOrderByIdDesc(String status, Integer userId, Pageable pageable);
 
-    Page<Post> findByStatusAndUser_IdAndCategory_IdOrderByIdDesc(String status, Integer userId, Integer categoryId, Pageable pageable);
+    Page<Post> findByStatusAndUser_IdAndPostCategory_IdOrderByIdDesc(String status, Integer userId, Integer categoryId, Pageable pageable);
 
     Page<Post> findByTitleContainingIgnoreCaseAndStatusOrderByIdDesc(String keyword, String status, Pageable pageable);
 

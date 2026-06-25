@@ -1,9 +1,11 @@
 package com.dinsaren.springbootjwtapi.exception;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.http.HttpStatus;
 
-@Data
+@Getter
+@Setter
 public class AppException extends Exception{
     private static final long serialVersionUID = 1L;
     private HttpStatus httpStatus;

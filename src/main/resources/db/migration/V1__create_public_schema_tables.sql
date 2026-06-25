@@ -1,14 +1,19 @@
 -- ============================================================
 -- Hibernate sequence
 -- ============================================================
+CREATE SCHEMA IF NOT EXISTS public;
 CREATE SEQUENCE IF NOT EXISTS hibernate_sequence START 1 INCREMENT 1;
 
 -- ============================================================
 -- roles
 -- ============================================================
 CREATE TABLE IF NOT EXISTS roles (
-    id   SERIAL PRIMARY KEY,
-    name VARCHAR(20)
+    id         SERIAL PRIMARY KEY,
+    name       VARCHAR(20),
+    created_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP,
+    updated_by VARCHAR(255)
 );
 
 INSERT INTO roles (name) SELECT 'ROLE_CUSTOMER' WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'ROLE_CUSTOMER');
@@ -137,15 +142,23 @@ CREATE TABLE IF NOT EXISTS image_details (
     file_name          VARCHAR(255),
     original_file_name VARCHAR(255),
     file_size          BIGINT,
-    status             VARCHAR(255)
+    status             VARCHAR(255),
+    created_at         TIMESTAMP,
+    created_by         VARCHAR(255),
+    updated_at         TIMESTAMP,
+    updated_by         VARCHAR(255)
 );
 
 -- ============================================================
 -- product_categories
 -- ============================================================
 CREATE TABLE IF NOT EXISTS product_categories (
-    id   SERIAL PRIMARY KEY,
-    name VARCHAR(255)
+    id         SERIAL PRIMARY KEY,
+    name       VARCHAR(255),
+    created_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP,
+    updated_by VARCHAR(255)
 );
 
 -- ============================================================
@@ -161,6 +174,10 @@ CREATE TABLE IF NOT EXISTS products (
     stock_quantity DOUBLE PRECISION,
     description    VARCHAR(255),
     status         VARCHAR(255),
+    created_at     TIMESTAMP,
+    created_by     VARCHAR(255),
+    updated_at     TIMESTAMP,
+    updated_by     VARCHAR(255),
     CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES product_categories (id)
 );
 
@@ -170,9 +187,13 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE SCHEMA IF NOT EXISTS hotel;
 
 CREATE TABLE IF NOT EXISTS hotel.category_hotel (
-    id     SERIAL PRIMARY KEY,
-    name   VARCHAR(255),
-    status VARCHAR(3)
+    id         SERIAL PRIMARY KEY,
+    name       VARCHAR(255),
+    status     VARCHAR(3),
+    created_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP,
+    updated_by VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS hotel.hotel (
@@ -185,6 +206,10 @@ CREATE TABLE IF NOT EXISTS hotel.hotel (
     email             VARCHAR(22),
     status            VARCHAR(3),
     category_hotel_id INT,
+    created_at        TIMESTAMP,
+    created_by        VARCHAR(255),
+    updated_at        TIMESTAMP,
+    updated_by        VARCHAR(255),
     CONSTRAINT fk_hotel_category FOREIGN KEY (category_hotel_id) REFERENCES hotel.category_hotel (id)
 );
 
@@ -194,6 +219,10 @@ CREATE TABLE IF NOT EXISTS hotel.floor (
     number_no  VARCHAR(255),
     decription VARCHAR(255),
     status     VARCHAR(3),
+    created_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP,
+    updated_by VARCHAR(255),
     CONSTRAINT fk_floor_hotel FOREIGN KEY (hotel_id) REFERENCES hotel.hotel (id)
 );
 
@@ -204,15 +233,23 @@ CREATE TABLE IF NOT EXISTS hotel.room (
     decription VARCHAR(255),
     price      NUMERIC(12, 4),
     status     VARCHAR(3),
+    created_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP,
+    updated_by VARCHAR(255),
     CONSTRAINT fk_room_floor FOREIGN KEY (floor_id) REFERENCES hotel.floor (id)
 );
 
 CREATE TABLE IF NOT EXISTS hotel.customer (
-    id     SERIAL PRIMARY KEY,
-    name   VARCHAR(255),
-    phone  VARCHAR(255),
-    email  VARCHAR(255),
-    status VARCHAR(3)
+    id         SERIAL PRIMARY KEY,
+    name       VARCHAR(255),
+    phone      VARCHAR(255),
+    email      VARCHAR(255),
+    status     VARCHAR(3),
+    created_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP,
+    updated_by VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS hotel.book_room (
@@ -224,6 +261,25 @@ CREATE TABLE IF NOT EXISTS hotel.book_room (
     checkout_date TIMESTAMP,
     total_price   NUMERIC(12, 4),
     status        VARCHAR(3),
+    created_at    TIMESTAMP,
+    created_by    VARCHAR(255),
+    updated_at    TIMESTAMP,
+    updated_by    VARCHAR(255),
     CONSTRAINT fk_book_room_hotel    FOREIGN KEY (hotel_id)    REFERENCES hotel.hotel (id),
     CONSTRAINT fk_book_room_customer FOREIGN KEY (customer_id) REFERENCES hotel.customer (id)
+);
+
+CREATE TABLE IF NOT EXISTS hotel.book_room_item (
+    id           SERIAL PRIMARY KEY,
+    book_room_id INT,
+    room_id      INT,
+    price        NUMERIC(12, 4),
+    qty          NUMERIC(12, 4),
+    status       VARCHAR(3),
+    created_at   TIMESTAMP,
+    created_by   VARCHAR(255),
+    updated_at   TIMESTAMP,
+    updated_by   VARCHAR(255),
+    CONSTRAINT fk_book_room_item_book_room FOREIGN KEY (book_room_id) REFERENCES hotel.book_room (id),
+    CONSTRAINT fk_book_room_item_room      FOREIGN KEY (room_id)      REFERENCES hotel.room (id)
 );

@@ -1,13 +1,22 @@
 plugins {
     id 'java'
-    id 'war'
-    id 'org.springframework.boot' version '2.6.3'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'org.springframework.boot' version '3.5.6'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.dinsaren'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '21'
+description = 'springbootjwtapi'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+ext {
+    set('springCloudVersion', "2023.0.1")
+}
 
 configurations {
     compileOnly {
@@ -26,44 +35,40 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // JWT
-    implementation 'io.jsonwebtoken:jjwt:0.9.1'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
-    // OpenAPI / Swagger UI
-    implementation 'org.springdoc:springdoc-openapi-ui:1.6.6'
-    implementation 'org.springdoc:springdoc-openapi-webmvc-core:1.6.8'
+    // OpenAPI / Swagger UI (Spring Boot 3.x requires the 2.x starter)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'
 
     // Utilities
     implementation 'com.google.guava:guava:20.0'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.12.3'
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
 
-    // Database migrations
-    implementation 'org.flywaydb:flyway-core'
-
     // Lombok (annotation processor only — excluded from final JAR/WAR)
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
     // Database drivers (runtime only)
-    runtimeOnly 'mysql:mysql-connector-java'
     runtimeOnly 'org.postgresql:postgresql'
+    implementation "org.flywaydb:flyway-core:10.17.0"
+    implementation "org.flywaydb:flyway-database-postgresql:10.17.0"
 
-    // Provided (WAR deployment — container supplies these)
-    providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
-    providedRuntime 'org.apache.tomcat.embed:tomcat-embed-jasper'
-
-    // Test
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
-bootWar {
-    archiveFileName = 'BelteiPostfreeServerApi.war'
-    mainClass = 'com.dinsaren.springbootjwtapi.SpringBootJwtApiApplication'
-}
+
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.16.0"
+    }
 }

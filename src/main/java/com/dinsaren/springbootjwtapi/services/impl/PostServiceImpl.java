@@ -54,7 +54,7 @@ public class PostServiceImpl implements PostService {
 
         if (hasUser) {
             if (hasCategory) {
-                result = postRepository.findByStatusAndUser_IdAndCategory_IdOrderByIdDesc(
+                result = postRepository.findByStatusAndUser_IdAndPostCategory_IdOrderByIdDesc(
                         isAll ? Constants.STATUS_ACTIVE : status, userId, categoryId, pageable);
             } else {
                 result = postRepository.findAllByStatusAndUser_IdOrderByIdDesc(
@@ -62,7 +62,7 @@ public class PostServiceImpl implements PostService {
             }
         } else if (isAll) {
             result = hasCategory
-                    ? postRepository.findAllByStatusInAndCategory_IdOrderByIdDesc(allStatuses, categoryId, pageable)
+                    ? postRepository.findAllByStatusInAndPostCategory_IdOrderByIdDesc(allStatuses, categoryId, pageable)
                     : postRepository.findAllByStatusInOrderByIdDesc(allStatuses, pageable);
         } else {
             String effectiveStatus = (status == null || status.isBlank()) ? Constants.STATUS_ACTIVE : status;

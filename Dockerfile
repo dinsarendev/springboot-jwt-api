@@ -1,40 +1,28 @@
-# Stage 1: Build the application using Maven (Java 11)
-FROM maven:3.9-eclipse-temurin-11 AS builder
+FROM nexus.cambofreelance.com/docker-hosted/core/gradle:8.5-jdk21 AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Copy Maven project files
-COPY pom.xml .
+COPY gradle gradle
+COPY build.gradle settings.gradle ./
+# ✅ Copy credentials file
+COPY gradle.properties /root/.gradle/gradle.properties
 COPY src ./src
 
-# Set timezone explicitly
 ENV TZ=Asia/Phnom_Penh
 
-# Configure the timezone in the container
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
     echo $TZ > /etc/timezone
 
-# Package the application
-RUN mvn package -DskipTests
+RUN gradle bootJar --no-daemon
 
-# Stage 2: Run the application
-FROM openjdk:17-jdk
+FROM nexus.cambofreelance.com/docker-hosted/core/eclipse-temurin:21-jdk-alpine
 
-# Set timezone in the runtime container too
 ENV TZ=Asia/Phnom_Penh
 
-# Set the working directory
-WORKDIR /app
+COPY --chown=1001:1001 --from=builder /app/build/libs/*.jar /app/app.jar
 
-# Copy the packaged JAR file from the build stage
-COPY --from=builder /app/target/*.war app.jar
+EXPOSE 8082
 
-# Expose application port (change 8080 if your app uses a different port)
-EXPOSE 30033
+USER 1001
 
-# Print timezone information before starting the app
-RUN echo "Container timezone set to: $(date)"
-
-# Run the Spring Boot application
-ENTRYPOINT ["java","-Duser.timezone=Asia/Phnom_Penh","-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Phnom_Penh", "-jar", "/app/app.jar"]
