@@ -22,6 +22,11 @@ import com.dinsaren.springbootjwtapi.security.services.RefreshTokenService;
 import com.dinsaren.springbootjwtapi.security.services.UserDetailsImpl;
 import com.dinsaren.springbootjwtapi.services.OtpService;
 import com.dinsaren.springbootjwtapi.services.UploadFileService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -41,6 +46,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/oauth")
 @Slf4j
+@Tag(name = "Authentication", description = "Login, register, token refresh and password management")
 public class AuthController {
     private final UploadFileService uploadFileService;
     private final AuthenticationManager authenticationManager;
@@ -88,11 +94,16 @@ public class AuthController {
         } catch (Exception e) {
             accountNumber = "0000000034";
         }
-
-
         return accountNumber;
     }
 
+    @Operation(summary = "Login", description = "Authenticate with phone number and password to receive a JWT access token")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Login successful, returns JWT tokens"),
+            @ApiResponse(responseCode = "400", description = "Missing or invalid credentials"),
+            @ApiResponse(responseCode = "401", description = "Invalid phone number or password")
+    })
+    @SecurityRequirements
     @PostMapping("/token")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginReq req) {
         log.info("Intercept request oath token {}", req);
@@ -124,9 +135,12 @@ public class AuthController {
         } finally {
             log.info("While response oath token final result {}", messageRes);
         }
-
     }
 
+    @Operation(summary = "Logout", description = "Invalidate the current refresh token")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Logout successful")
+    })
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser(@RequestBody LogOutReq req) {
         refreshTokenService.deleteByUserId(req.getUserId());
@@ -178,6 +192,12 @@ public class AuthController {
         return false;
     }
 
+    @Operation(summary = "Forgot password - send OTP", description = "Send an OTP to the registered phone number to begin the password reset flow")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OTP sent successfully"),
+            @ApiResponse(responseCode = "502", description = "Phone number not found")
+    })
+    @SecurityRequirements
     @PostMapping("/forgot/password")
     public ResponseEntity<Object> forgotPassword(@RequestBody ForgetPasswordReq req) {
         try {
@@ -199,7 +219,6 @@ public class AuthController {
             otpLog.setOtp(otp);
             otpLog.setOtpMessage(otp + " " + smsTemplate);
             otpLogRepository.save(otpLog);
-            //sendOtpToTwilio(req.getPrefix(), req.getPhoneNumber(), otp, req.getDeviceId());
             messageRes.setOpenAccountSuccess();
             return new ResponseEntity<>(messageRes, HttpStatus.OK);
         } catch (Throwable e) {
@@ -209,9 +228,15 @@ public class AuthController {
         } finally {
             log.info("Verity OTP Open account req final result {}", messageRes);
         }
-
     }
 
+    @Operation(summary = "Forgot password - verify OTP", description = "Verify the OTP received on the phone to proceed with password reset")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OTP verified successfully"),
+            @ApiResponse(responseCode = "400", description = "OTP does not match"),
+            @ApiResponse(responseCode = "502", description = "Phone number not found")
+    })
+    @SecurityRequirements
     @PostMapping("/forgot/password/verify")
     public ResponseEntity<Object> forgotPasswordVerify(@RequestBody ForgetPasswordReq req) {
         try {
@@ -221,7 +246,6 @@ public class AuthController {
                 messageRes.setInvalidStage();
                 return new ResponseEntity<>(messageRes, HttpStatus.BAD_GATEWAY);
             }
-
             String key = req.getDeviceId() + req.getPhoneNumber();
             if (checkStage(req, key)) return new ResponseEntity<>(messageRes, HttpStatus.BAD_REQUEST);
             SmsCache.remove(key);
@@ -234,9 +258,15 @@ public class AuthController {
         } finally {
             log.info("Verity OTP Open account req final result {}", messageRes);
         }
-
     }
 
+    @Operation(summary = "Forgot password - set new password", description = "Set a new password after OTP verification is complete")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "400", description = "Passwords do not match or old password is incorrect"),
+            @ApiResponse(responseCode = "502", description = "User not found or invalid state")
+    })
+    @SecurityRequirements
     @PostMapping("/forgot/password/finish")
     public ResponseEntity<Object> forgotPasswordFinish(@RequestBody ForgetPasswordReq req) {
         try {
@@ -271,9 +301,14 @@ public class AuthController {
         } finally {
             log.info("Verity OTP Open account req final result {}", messageRes);
         }
-
     }
 
+    @Operation(summary = "Register", description = "Create a new user account")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Account created successfully"),
+            @ApiResponse(responseCode = "400", description = "Validation error or duplicate username / email / phone")
+    })
+    @SecurityRequirements
     @PostMapping("/register")
     public ResponseEntity<MessageRes> registerUser(@RequestBody RegisterReq req) {
         MessageRes messageRes = new MessageRes();
@@ -291,17 +326,14 @@ public class AuthController {
                 messageRes.setNameAlreadyUse();
                 return new ResponseEntity<>(messageRes, HttpStatus.BAD_REQUEST);
             }
-
             if (userRepository.existsByEmailAndStatus(req.getEmail(), Constants.STATUS_ACTIVE)) {
                 messageRes.setEmailAlreadyUse();
                 return new ResponseEntity<>(messageRes, HttpStatus.BAD_REQUEST);
             }
-
             if (userRepository.existsByPhoneNumberAndStatus(req.getPhoneNumber(), Constants.STATUS_ACTIVE)) {
                 messageRes.setPhoneAlreadyUse();
                 return new ResponseEntity<>(messageRes, HttpStatus.BAD_REQUEST);
             }
-
             User user = new User(req.getUsername(), req.getEmail(), encoder.encode(req.getPassword()), req.getPhoneNumber());
             Set<Role> roles = new HashSet<>();
             Role role = null;
@@ -327,7 +359,12 @@ public class AuthController {
         }
     }
 
-
+    @Operation(summary = "Refresh token", description = "Get a new access token using a valid refresh token")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "New access token issued"),
+            @ApiResponse(responseCode = "403", description = "Refresh token expired or not found")
+    })
+    @SecurityRequirements
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody TokenRefreshReq request) {
         String requestRefreshToken = request.getRefreshToken();
@@ -364,13 +401,17 @@ public class AuthController {
         boolean verify = otpService.verify(Integer.parseInt(otpValue), key);
         if (!verify) {
             log.error("Verify OTP not match {}", otpValue);
-//            throw new AppException(HttpStatus.OK, "ERR-1004", "Verify OTP not match");
         }
     }
 
+    @Operation(summary = "Upload profile image", description = "Upload an image file and get back the stored filename")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+            @ApiResponse(responseCode = "500", description = "Upload failed")
+    })
+    @SecurityRequirements
     @PostMapping(value = "/image/upload", consumes = {"multipart/form-data"})
-    public ResponseEntity<Object> uploadFile(
-            @RequestParam("File") MultipartFile file) {
+    public ResponseEntity<Object> uploadFile(@RequestParam("File") MultipartFile file) {
         log.info("Intercept upload file req {}", file.toString());
         try {
             UploadImageRes res = uploadFileService.uploadFile(file);
@@ -384,5 +425,4 @@ public class AuthController {
             log.info("Final Response upload file {}", file.getOriginalFilename());
         }
     }
-
 }

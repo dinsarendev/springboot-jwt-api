@@ -2,136 +2,167 @@ package com.dinsaren.springbootjwtapi.services.impl;
 
 import com.dinsaren.springbootjwtapi.constants.Constants;
 import com.dinsaren.springbootjwtapi.exception.AppException;
-import com.dinsaren.springbootjwtapi.models.Category;
 import com.dinsaren.springbootjwtapi.models.Post;
+import com.dinsaren.springbootjwtapi.models.PostCategory;
 import com.dinsaren.springbootjwtapi.models.User;
 import com.dinsaren.springbootjwtapi.models.notification.Notification;
 import com.dinsaren.springbootjwtapi.models.notification.NotificationData;
 import com.dinsaren.springbootjwtapi.models.notification.PushNotificationRequest;
-import com.dinsaren.springbootjwtapi.repository.CategoryRepository;
+import com.dinsaren.springbootjwtapi.models.req.PostCreateReq;
+import com.dinsaren.springbootjwtapi.models.req.PostUpdateReq;
+import com.dinsaren.springbootjwtapi.models.res.PageRes;
+import com.dinsaren.springbootjwtapi.repository.PostCategoryRepository;
 import com.dinsaren.springbootjwtapi.repository.PostRepository;
 import com.dinsaren.springbootjwtapi.services.AuthenticationUtilService;
 import com.dinsaren.springbootjwtapi.services.PostService;
 import com.dinsaren.springbootjwtapi.services.PushNotificationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
+
     private final PushNotificationService pushNotificationService;
     private final PostRepository postRepository;
     private final AuthenticationUtilService authenticationUtilService;
-
-    private final CategoryRepository categoryRepository;
-
-    public PostServiceImpl(PushNotificationService pushNotificationService, PostRepository postRepository, AuthenticationUtilService authenticationUtilService, CategoryRepository categoryRepository) {
-        this.pushNotificationService = pushNotificationService;
-        this.postRepository = postRepository;
-        this.authenticationUtilService = authenticationUtilService;
-        this.categoryRepository = categoryRepository;
-    }
+    private final PostCategoryRepository postCategoryRepository;
 
     @Override
-    public List<Post> findAll(String status, int limit, int page) throws AppException {
-//        Pageable pageable = PageRequest.of(page, limit);
-//        if (status.equals("ALL")) {
-//            List<String> stringList = new ArrayList<>();
-//            stringList.add(Constants.STATUS_ACTIVE);
-//            stringList.add(Constants.STATUS_DELETE);
-//            return postRepository.findAllByStatusInAndUserIdOrderByIdDesc(stringList, pageable);
-//        } else {
-//            return postRepository.findAllByStatusOrderByIdDesc(status, pageable);
-//        }
-        return null;
-    }
+    public PageRes<Post> findAll(int page, int size, String status, Integer categoryId, Integer userId, String keyword) throws AppException {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Post> result;
 
-    @Override
-    public List<Post> findAllByUserId(String status, int limit, int page, Integer userId, Integer categoryId, String name) throws AppException {
-        authenticationUtilService.checkUser();
-        Pageable paging = PageRequest.of(page, limit);
-        if (name != null && !name.equals("")) {
-            return postRepository.findByTitleLike("%"+name+"%");
+        if (keyword != null && !keyword.isBlank()) {
+            String effectiveStatus = (status == null || status.isBlank()) ? Constants.STATUS_ACTIVE : status;
+            result = postRepository.findByTitleContainingIgnoreCaseAndStatusOrderByIdDesc(keyword, effectiveStatus, pageable);
+            return PageRes.of(result);
         }
-        if (userId != 0) {
-            if (categoryId == 0) {
-                return postRepository.findAllByStatusAndUser_IdOrderById(status, userId, paging);
+
+        boolean hasUser = userId != null && userId > 0;
+        boolean hasCategory = categoryId != null && categoryId > 0;
+        boolean isAll = "ALL".equalsIgnoreCase(status);
+        List<String> allStatuses = Arrays.asList(Constants.STATUS_ACTIVE, Constants.STATUS_DELETE);
+
+        if (hasUser) {
+            if (hasCategory) {
+                result = postRepository.findByStatusAndUser_IdAndPostCategory_IdOrderByIdDesc(
+                        isAll ? Constants.STATUS_ACTIVE : status, userId, categoryId, pageable);
             } else {
-                return postRepository.findByStatusAndUser_IdAndCategory_IdOrderByIdDesc(status, userId, paging, categoryId);
+                result = postRepository.findAllByStatusAndUser_IdOrderByIdDesc(
+                        isAll ? Constants.STATUS_ACTIVE : status, userId, pageable);
             }
+        } else if (isAll) {
+            result = hasCategory
+                    ? postRepository.findAllByStatusInAndPostCategory_IdOrderByIdDesc(allStatuses, categoryId, pageable)
+                    : postRepository.findAllByStatusInOrderByIdDesc(allStatuses, pageable);
         } else {
-            if (status.equals("ALL")) {
-                List<String> stringList = new ArrayList<>();
-                stringList.add(Constants.STATUS_ACTIVE);
-                stringList.add(Constants.STATUS_DELETE);
-                if (categoryId == 0) {
-                    return postRepository.findAllByStatusInOrderByIdDesc(stringList, paging);
-                } else {
-                    return postRepository.findAllByStatusInAndCategory_IdOrderByIdDesc(stringList, paging, categoryId);
-                }
-            } else {
-                return postRepository.findAllByStatusOrderByIdDesc(status, paging);
-            }
+            String effectiveStatus = (status == null || status.isBlank()) ? Constants.STATUS_ACTIVE : status;
+            result = postRepository.findAllByStatusOrderByIdDesc(effectiveStatus, pageable);
         }
 
+        return PageRes.of(result);
     }
 
     @Override
-    public Post findById(Integer id, String status) throws AppException {
-        Post post = postRepository.findByIdAndStatus(id, status).orElse(null);
-        if (post != null) {
-            post.setTotalView(post.getTotalView() + 1);
-            postRepository.saveAndFlush(post);
-        }
+    public Post findById(Integer id) throws AppException {
+        Post post = postRepository.findByIdAndStatus(id, Constants.STATUS_ACTIVE)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "ERR-404", "Post not found"));
+        post.setViews(post.getViews() + 1);
+        postRepository.saveAndFlush(post);
         return post;
     }
 
     @Override
-    public void save(Post post) throws AppException {
+    public Post create(PostCreateReq req) throws AppException {
         User user = authenticationUtilService.checkUser();
+        PostCategory postCategory = postCategoryRepository.findById(req.getCategoryId())
+                .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "ERR-400", "Post category not found"));
+
+        Post post = new Post();
+        post.setTitle(req.getTitle());
+        post.setDescription(req.getDescription());
+        post.setBody(req.getBody());
+        post.setImage(req.getImage());
+        post.setTags(req.getTags());
+        post.setPostCategory(postCategory);
         post.setUser(user);
+        post.setStatus(Constants.STATUS_ACTIVE);
         post.setCreateAt(new Date());
         post.setCreateBy(user.getUsername());
-        post.setStatus(Constants.STATUS_ACTIVE);
-        Category category = categoryRepository.findById(post.getCategory().getId()).orElse(null);
-        post.setCategory(category);
-        Post create = postRepository.save(post);
-        if (create.getId() > 0) {
-            PushNotificationRequest request = new PushNotificationRequest();
-            request.setTo("/topics/FREE_POST_APP");
-            Notification notification = new Notification();
-            notification.setTitle(post.getTitle());
-            notification.setBody(post.getDescription());
-            notification.setSound("default");
-            NotificationData notificationData = new NotificationData();
-            notificationData.setImageUrl(post.getImage());
-            notificationData.setPostId(create.getId().toString());
-            request.setData(notificationData);
-            request.setNotification(notification);
-            pushNotificationService.sendPushNotification(request);
-        }
+
+        Post saved = postRepository.save(post);
+        sendPushNotification(saved);
+        return saved;
     }
 
     @Override
-    public void update(Post post) throws AppException {
+    public Post update(Integer id, PostUpdateReq req) throws AppException {
         User user = authenticationUtilService.checkUser();
-        post.setCreateAt(new Date());
+        Post post = postRepository.findByIdAndStatus(id, Constants.STATUS_ACTIVE)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "ERR-404", "Post not found"));
+        PostCategory postCategory = postCategoryRepository.findById(req.getCategoryId())
+                .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "ERR-400", "Post category not found"));
+
+        post.setTitle(req.getTitle());
+        post.setDescription(req.getDescription());
+        post.setBody(req.getBody());
+        post.setImage(req.getImage());
+        post.setTags(req.getTags());
+        post.setPostCategory(postCategory);
+        post.setUpdateAt(new Date());
         post.setUpdateBy(user.getUsername());
-        Category category = categoryRepository.findById(post.getCategory().getId()).orElse(null);
-        post.setCategory(category);
-        postRepository.save(post);
+
+        return postRepository.save(post);
     }
 
     @Override
-    public void delete(Post post) throws AppException {
+    public void delete(Integer id) throws AppException {
         User user = authenticationUtilService.checkUser();
-        post.setCreateAt(new Date());
-        post.setUpdateBy(user.getUsername());
+        Post post = postRepository.findByIdAndStatus(id, Constants.STATUS_ACTIVE)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "ERR-404", "Post not found"));
         post.setStatus(Constants.STATUS_DELETE);
+        post.setUpdateAt(new Date());
+        post.setUpdateBy(user.getUsername());
         postRepository.save(post);
+    }
+
+    @Override
+    public Post like(Integer id) throws AppException {
+        Post post = postRepository.findByIdAndStatus(id, Constants.STATUS_ACTIVE)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "ERR-404", "Post not found"));
+        post.getReactions().setLikes(post.getReactions().getLikes() + 1);
+        return postRepository.save(post);
+    }
+
+    @Override
+    public Post dislike(Integer id) throws AppException {
+        Post post = postRepository.findByIdAndStatus(id, Constants.STATUS_ACTIVE)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "ERR-404", "Post not found"));
+        post.getReactions().setDislikes(post.getReactions().getDislikes() + 1);
+        return postRepository.save(post);
+    }
+
+    private void sendPushNotification(Post post) {
+        PushNotificationRequest request = new PushNotificationRequest();
+        request.setTo("/topics/FREE_POST_APP");
+        Notification notification = new Notification();
+        notification.setTitle(post.getTitle());
+        notification.setBody(post.getDescription());
+        notification.setSound("default");
+        NotificationData data = new NotificationData();
+        data.setImageUrl(post.getImage());
+        data.setPostId(post.getId().toString());
+        request.setData(data);
+        request.setNotification(notification);
+        pushNotificationService.sendPushNotification(request);
     }
 }

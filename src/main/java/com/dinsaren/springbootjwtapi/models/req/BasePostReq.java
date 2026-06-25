@@ -15,4 +15,6 @@ public class BasePostReq {
     private Integer categoryId;
 
     private String name;
+    private String type="ALL";
+    private int categoryHotelId=0;
 }

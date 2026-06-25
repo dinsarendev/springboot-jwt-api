@@ -7,7 +7,7 @@ public enum UserRole {
     ROLE_ADMIN,
     ROLE_SHOP,
     ROLE_CASHIER,
-
     ROLE_MERCHANT,
-
+    ROLE_CREATOR,
+    ROLE_REVIEWER,
 }

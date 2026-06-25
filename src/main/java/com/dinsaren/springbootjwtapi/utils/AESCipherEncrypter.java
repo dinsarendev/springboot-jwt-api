@@ -1,6 +1,6 @@
 package com.dinsaren.springbootjwtapi.utils;
 
-import org.apache.tomcat.util.codec.binary.Base64;
+import java.util.Base64;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -35,7 +35,7 @@ public class AESCipherEncrypter {
             final byte[] encodeTextBytes = cipher.doFinal(plainTextBytes);
             final byte[] encodeTextBytes1 = cipher.doFinal(encodeTextBytes);
 
-            encodedText = new Base64().encodeToString(encodeTextBytes);
+            encodedText = Base64.getEncoder().encodeToString(encodeTextBytes);
 
 
         } catch (NoSuchAlgorithmException |
@@ -69,7 +69,7 @@ public class AESCipherEncrypter {
             final byte[] plainTextBytes = orignalText.getBytes("utf-8");
             final byte[] encodeTextBytes = cipher.doFinal(plainTextBytes);
 
-            encodedText = new Base64().encodeToString(encodeTextBytes);
+            encodedText = Base64.getEncoder().encodeToString(encodeTextBytes);
 
 
         } catch (NoSuchAlgorithmException |
@@ -103,7 +103,7 @@ public class AESCipherEncrypter {
             final byte[] plainTextBytes = orignalText.getBytes("utf-8");
             final byte[] encodeTextBytes = cipher.doFinal(plainTextBytes);
 
-            encodedText = new Base64().encodeToString(encodeTextBytes);
+            encodedText = Base64.getEncoder().encodeToString(encodeTextBytes);
 
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException | IllegalBlockSizeException
                  | InvalidKeyException | BadPaddingException | NoSuchPaddingException
@@ -124,7 +124,7 @@ public class AESCipherEncrypter {
             final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
             cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(new byte[16]));
-            final byte[] plainTextBytes = Base64.decodeBase64(orignalText);
+            final byte[] plainTextBytes = Base64.getDecoder().decode(orignalText);
             final byte[] encodeTextBytes = cipher.doFinal(plainTextBytes);
 
             return new String(encodeTextBytes);
@@ -146,7 +146,7 @@ public class AESCipherEncrypter {
             final Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
             cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(new byte[16]));
-            final byte[] plainTextBytes = Base64.decodeBase64(orignalText);
+            final byte[] plainTextBytes = Base64.getDecoder().decode(orignalText);
             final byte[] encodeTextBytes = cipher.doFinal(plainTextBytes);
 
             return new String(encodeTextBytes);

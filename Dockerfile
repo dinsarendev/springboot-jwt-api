@@ -1,24 +1,28 @@
-# Stage 1: Build the application using Maven
-FROM maven:3.9-eclipse-temurin-17 AS builder
+FROM nexus.cambofreelance.com/docker-hosted/core/gradle:8.5-jdk21 AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Copy necessary files
-COPY pom.xml pom.xml
-COPY src src/
+COPY gradle gradle
+COPY build.gradle settings.gradle ./
+# ✅ Copy credentials file
+COPY gradle.properties /root/.gradle/gradle.properties
+COPY src ./src
 
-# Build the application without running tests
-RUN mvn clean package -DskipTests
+ENV TZ=Asia/Phnom_Penh
 
-# Stage 2: Run the application with JRE only
-FROM eclipse-temurin:17-jre
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone
 
-# Set the working directory
-WORKDIR /app
+RUN gradle bootJar --no-daemon
 
-# Copy the JAR from the builder stage to the final stage
-COPY --from=builder /app/target/*.jar app.jar
+FROM nexus.cambofreelance.com/docker-hosted/core/eclipse-temurin:21-jdk-alpine
 
-# Command to run the app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV TZ=Asia/Phnom_Penh
+
+COPY --chown=1001:1001 --from=builder /app/build/libs/*.jar /app/app.jar
+
+EXPOSE 8082
+
+USER 1001
+
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Phnom_Penh", "-jar", "/app/app.jar"]

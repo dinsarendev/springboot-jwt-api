@@ -44,6 +44,13 @@ public class MessageRes {
         this.messageKh = "សំណើមិនល្អ";
     }
 
+    public void setDataNotfound(String message) {
+        this.code = ErrorCode.BAD_REQUEST;
+        this.message = message;
+        this.messageKh = message;
+    }
+
+
     public void setError(Object data) {
         this.code = "ERR-000";
         this.message = "Data Approval Error";
@@ -57,11 +64,24 @@ public class MessageRes {
         this.messageKh = "បង្កើតទិន្នន័យជោគជ័យ";
         this.data = data;
     }
+    public void setMessageDeleteCategory(Object data) {
+        this.code = "SUC-0023";
+        this.message = "Category already used by product";
+        this.messageKh = "Category already used by product";
+        this.data = data;
+    }
 
     public void setUpdateSuccess(Object data) {
         this.code = "SUC-000";
         this.message = "Update Data Success";
         this.messageKh = "ធ្វើបច្ចុប្បន្នភាពទិន្នន័យជោគជ័យ";
+        this.data = data;
+    }
+
+    public void dataNotFound(Object data) {
+        this.code = "SUC-0024";
+        this.message = "Data Not Found";
+        this.messageKh = "Data Not Found";
         this.data = data;
     }
 

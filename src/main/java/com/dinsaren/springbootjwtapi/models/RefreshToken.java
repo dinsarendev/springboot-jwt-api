@@ -1,12 +1,21 @@
 package com.dinsaren.springbootjwtapi.models;
 
-import javax.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import java.io.Serializable;
 import java.time.Instant;
 
-@Entity(name = "refresh_tokens")
-public class RefreshToken {
+@Entity
+@Table(name = "refresh_tokens")
+public class RefreshToken implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     @OneToOne

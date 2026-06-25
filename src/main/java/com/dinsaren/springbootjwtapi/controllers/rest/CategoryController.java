@@ -1,10 +1,14 @@
 package com.dinsaren.springbootjwtapi.controllers.rest;
 
 import com.dinsaren.springbootjwtapi.exception.AppException;
-import com.dinsaren.springbootjwtapi.models.Category;
-import com.dinsaren.springbootjwtapi.models.req.BasePostReq;
+import com.dinsaren.springbootjwtapi.models.PostCategory;
 import com.dinsaren.springbootjwtapi.models.res.MessageRes;
-import com.dinsaren.springbootjwtapi.services.CategoryService;
+import com.dinsaren.springbootjwtapi.services.PostCategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,101 +19,132 @@ import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/app/category")
+@RequestMapping("/api/app/post/category")
 @Slf4j
-@PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN') or hasRole('MERCHANT')")
+@Tag(name = "Post Category", description = "Post category management")
+//@PreAuthorize("hasRole('USER') or hasRole('CUSTOMER') or hasRole('ADMIN') or hasRole('MERCHANT')")
+@RequiredArgsConstructor
 public class CategoryController {
-    private final CategoryService categoryService;
-    private MessageRes messageRes;
 
-    public CategoryController(CategoryService categoryService) {
-        this.categoryService = categoryService;
-    }
+    private final PostCategoryService postCategoryService;
 
-    @PostMapping("/list")
-    public ResponseEntity<Object> getAll(@RequestBody BasePostReq req) {
+    @Operation(summary = "List post categories", description = "Retrieve all post categories filtered by status (ACT / DEL / ALL)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List returned successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping
+    public ResponseEntity<MessageRes> getAll(@RequestParam(defaultValue = "ACT") String status) {
+        MessageRes res = new MessageRes();
         try {
-            log.info("Intercept get all categories req {}", req);
-            List<Category> categories = categoryService.findAllCategoryByStatus(req.getStatus());
-            messageRes = new MessageRes();
-            messageRes.setSuccess(categories);
-            return new ResponseEntity<>(messageRes, HttpStatus.OK);
+            List<PostCategory> categories = postCategoryService.findAllByStatus(status);
+            res.setSuccess(categories);
+            return ResponseEntity.ok(res);
         } catch (AppException e) {
-            log.error("Error get all categories {}", e.toString());
-            return new ResponseEntity<>(new MessageRes(e.getErrorCode(), e.getMessage(), null), e.getHttpStatus());
+            return ResponseEntity.status(e.getHttpStatus())
+                    .body(new MessageRes(e.getErrorCode(), e.getMessage(), null));
         } catch (Exception e) {
-            log.error("Error internal error get all categories {}", e.toString());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error listing post categories", e);
+            res.setInternalServer();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
 
-    @PostMapping("/{id}")
-    public ResponseEntity<Object> getById(@RequestBody BasePostReq req, @PathVariable("id") Integer id) {
+    @Operation(summary = "Get post category by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Category found"),
+            @ApiResponse(responseCode = "404", description = "Category not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<MessageRes> getById(@PathVariable Integer id) {
+        MessageRes res = new MessageRes();
         try {
-            log.info("Intercept get category by req {}", req);
-            Category category = categoryService.findById(id);
-            messageRes = new MessageRes();
-            messageRes.setSuccess(category);
-            return new ResponseEntity<>(messageRes, HttpStatus.OK);
+            PostCategory category = postCategoryService.findById(id);
+            if (category == null) {
+                res.dataNotFound("Post category not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
+            }
+            res.setSuccess(category);
+            return ResponseEntity.ok(res);
         } catch (AppException e) {
-            log.error("Error get category by id {}", e.toString());
-            return new ResponseEntity<>(new MessageRes(e.getErrorCode(), e.getMessage(), null), e.getHttpStatus());
+            return ResponseEntity.status(e.getHttpStatus())
+                    .body(new MessageRes(e.getErrorCode(), e.getMessage(), null));
         } catch (Exception e) {
-            log.error("Error internal error get category by id {}", e.toString());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error getting post category by id {}", id, e);
+            res.setInternalServer();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<Object> create(@RequestBody Category req) {
+    @Operation(summary = "Create post category")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Created successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PostMapping
+    public ResponseEntity<MessageRes> create(@RequestBody PostCategory req) {
+        MessageRes res = new MessageRes();
         try {
-            log.info("Intercept create category req {}", req);
-            categoryService.save(req);
-            messageRes = new MessageRes();
-            messageRes.setCreateSuccess("Create success");
-            return new ResponseEntity<>(messageRes, HttpStatus.OK);
+            postCategoryService.save(req);
+            res.setCreateSuccess("Post category created successfully");
+            return ResponseEntity.status(HttpStatus.CREATED).body(res);
         } catch (AppException e) {
-            log.error("Error create category : {}", e.toString());
-            return new ResponseEntity<>(new MessageRes(e.getErrorCode(), e.getMessage(), null), e.getHttpStatus());
+            return ResponseEntity.status(e.getHttpStatus())
+                    .body(new MessageRes(e.getErrorCode(), e.getMessage(), null));
         } catch (Exception e) {
-            log.error("Error internal error create category : {}", e.toString());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error creating post category", e);
+            res.setInternalServer();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
 
-    @PostMapping("/update")
-    public ResponseEntity<Object> update(@RequestBody Category req) {
+    @Operation(summary = "Update post category")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Category not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<MessageRes> update(@PathVariable Integer id, @RequestBody PostCategory req) {
+        MessageRes res = new MessageRes();
         try {
-            log.info("Intercept update category req {}", req);
-            categoryService.update(req);
-            messageRes = new MessageRes();
-            messageRes.setUpdateSuccess("Update success");
-            return new ResponseEntity<>(messageRes, HttpStatus.OK);
+            req.setId(id);
+            postCategoryService.update(req);
+            res.setUpdateSuccess("Post category updated successfully");
+            return ResponseEntity.ok(res);
         } catch (AppException e) {
-            log.error("Error update category : {}", e.toString());
-            return new ResponseEntity<>(new MessageRes(e.getErrorCode(), e.getMessage(), null), e.getHttpStatus());
+            return ResponseEntity.status(e.getHttpStatus())
+                    .body(new MessageRes(e.getErrorCode(), e.getMessage(), null));
         } catch (Exception e) {
-            log.error("Error internal error update category : {}", e.toString());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error updating post category {}", id, e);
+            res.setInternalServer();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
 
-    @PostMapping("/delete")
-    public ResponseEntity<Object> delete(@RequestBody Category req) {
+    @Operation(summary = "Delete post category", description = "Soft-deletes the category by setting status to DEL")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Category not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<MessageRes> delete(@PathVariable Integer id) {
+        MessageRes res = new MessageRes();
         try {
-            log.info("Intercept delete category req {}", req);
-            categoryService.update(req);
-            messageRes = new MessageRes();
-            messageRes.setUpdateSuccess("Delete success");
-            return new ResponseEntity<>(messageRes, HttpStatus.OK);
+            PostCategory req = new PostCategory();
+            req.setId(id);
+            postCategoryService.delete(req);
+            res.setUpdateSuccess("Post category deleted successfully");
+            return ResponseEntity.ok(res);
         } catch (AppException e) {
-            log.error("Error delete category : {}", e.toString());
-            return new ResponseEntity<>(new MessageRes(e.getErrorCode(), e.getMessage(), null), e.getHttpStatus());
+            return ResponseEntity.status(e.getHttpStatus())
+                    .body(new MessageRes(e.getErrorCode(), e.getMessage(), null));
         } catch (Exception e) {
-            log.error("Error internal error delete brand : {}", e.toString());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error deleting post category {}", id, e);
+            res.setInternalServer();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
         }
     }
-
-
 }
