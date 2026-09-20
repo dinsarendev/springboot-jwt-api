@@ -18,7 +18,7 @@ services:
       - ./upload/images:/app/upload/images
     networks:
       - cf-cms-service
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:30033/actuator/health"]
       interval: 30s

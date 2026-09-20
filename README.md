@@ -69,3 +69,14 @@ docker compose -f docker-compose.yml up -d
 ```
 
 It does not manage `postgres/docker-compose.yml` — the database is expected to already be running on the target server.
+
+
+- 1. Login -> Username + Password | Google | Facebook | Github
+   - Save to Local Storage
+   - Access Token -> 5 Minute Expired
+   - Refresh Token -> 90 day
+ 2. Call other call API with Access Token => JWT (Json Web Token)
+  - Access Token Expired
+  - Renew Access Token
+  - Auto Logout
+
